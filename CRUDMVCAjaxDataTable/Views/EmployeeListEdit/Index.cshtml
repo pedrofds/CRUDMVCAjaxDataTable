@@ -1,0 +1,206 @@
+﻿@model IEnumerable<Employee>
+
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+</head>
+<body>
+    <table id="tblEmployees" class="table" cellpadding="0" cellspacing="0">
+        <tr>
+            <th style="width:100px">Employee Id</th>
+            <th style="width:150px">Name</th>
+            <th style="width:150px">Salary</th>
+            <th style="width:150px"></th>
+        </tr>
+        @foreach (Employee employee in Model)
+        {
+            <tr>
+                <td class="EmployeeID">
+                    <span>@employee.EmployeeID</span>
+                </td>
+                <td class="Name">
+                    <span>@employee.Name</span>
+                    <input type="text" value="@employee.Name" style="display:none" />
+                </td>
+                <td class="Salary">
+                    <span>@employee.Salary</span>
+                    <input type="text" value="@employee.Salary" style="display:none" />
+                </td>
+                <td>
+                    <a class="Edit" href="javascript:;">Edit</a>
+                    <a class="Update" href="javascript:;" style="display:none">Update</a>
+                    <a class="Cancel" href="javascript:;" style="display:none">Cancel</a>
+                    <a class="Delete" href="javascript:;">Delete</a>
+                </td>
+            </tr>
+        }
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0">
+        <tr>
+            <td style="width: 150px">
+                Name<br />
+                <input type="text" id="txtName" style="width:140px" />
+            </td>
+            <td style="width: 150px">
+                Salary:<br />
+                <input type="text" id="txtSalary" style="width:140px" />
+            </td>
+            <td style="width: 200px">
+                <br />
+                <input type="button" id="btnAdd" value="Add" />
+            </td>
+        </tr>
+    </table>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.cdnjs.com/ajax/libs/json2/20110223/json2.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            //Remove the dummy row if data present.
+            if ($("#tblEmployees tr").length > 2) {
+                $("#tblEmployees tr:eq(1)").remove();
+            } else {
+                var row = $("#tblEmployees tr:last-child");
+                row.find(".Edit").hide();
+                row.find(".Delete").hide();
+                row.find("span").html('&nbsp;');
+            }
+        });
+
+        function AppendRow(row, employeeId, name, Salary) {
+            //Bind EmployeeID.
+            $(".EmployeeID", row).find("span").html(employeeId);
+
+            //Bind Name.
+            $(".Name", row).find("span").html(name);
+            $(".Name", row).find("input").val(name);
+
+            //Bind Salary.
+            $(".Salary", row).find("span").html(Salary);
+            $(".Salary", row).find("input").val(Salary);
+
+            row.find(".Edit").show();
+            row.find(".Delete").show();
+            $("#tblEmployees").append(row);
+        };
+        
+        //Add event handler.
+        $("body").on("click", "#btnAdd", function () {
+            /*
+             *
+             *  var model = {
+          "name": txtName.val(),
+          "salary": txtSalary.val()
+        }*/
+            var txtName = $("#txtName");
+            var txtSalary = $("#txtSalary");
+            $.ajax({
+                type: "POST",
+                url: "/EmployeeListEdit/InsertEmployee",
+                data: '{Name: "' + txtName.val() + '", Salary: "' + txtSalary.val() + '" }',
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (r) {
+                    var row = $("#tblEmployees tr:last-child");
+                    if ($("#tblEmployees tr:last-child span").eq(0).html() != "&nbsp;") {
+                        row = row.clone();
+                    }
+                    AppendRow(row, r.EmployeeID, r.Name, r.Salary);
+                    txtName.val("");
+                    txtSalary.val("");
+                }
+            });
+        });
+
+        //Edit event handler.
+        $("body").on("click", "#tblEmployees .Edit", function () {
+            var row = $(this).closest("tr");
+            $("td", row).each(function () {
+                if ($(this).find("input").length > 0) {
+                    $(this).find("input").show();
+                    $(this).find("span").hide();
+                }
+            });
+            row.find(".Update").show();
+            row.find(".Cancel").show();
+            row.find(".Delete").hide();
+            $(this).hide();
+        });
+
+        //Update event handler.
+        $("body").on("click", "#tblEmployees .Update", function () {
+            var row = $(this).closest("tr");
+            $("td", row).each(function () {
+                if ($(this).find("input").length > 0) {
+                    var span = $(this).find("span");
+                    var input = $(this).find("input");
+                    span.html(input.val());
+                    span.show();
+                    input.hide();
+                }
+            });
+            row.find(".Edit").show();
+            row.find(".Delete").show();
+            row.find(".Cancel").hide();
+            $(this).hide();
+
+            var employee = {};
+            employee.EmployeeID = row.find(".EmployeeID").find("span").html();
+            employee.Name = row.find(".Name").find("span").html();
+            employee.Salary = row.find(".Salary").find("span").html();
+            $.ajax({
+                type: "POST",
+                url: "/EmployeeListEdit/UpdateEmployee",
+                data: '{employee:' + JSON.stringify(employee) + '}',
+                contentType: "application/json; charset=utf-8",
+                dataType: "json"
+            });
+        });
+
+        //Cancel event handler.
+        $("body").on("click", "#tblEmployees .Cancel", function () {
+            var row = $(this).closest("tr");
+            $("td", row).each(function () {
+                if ($(this).find("input").length > 0) {
+                    var span = $(this).find("span");
+                    var input = $(this).find("input");
+                    input.val(span.html());
+                    span.show();
+                    input.hide();
+                }
+            });
+            row.find(".Edit").show();
+            row.find(".Delete").show();
+            row.find(".Update").hide();
+            $(this).hide();
+        });
+
+        //Delete event handler.
+        $("body").on("click", "#tblEmployees .Delete", function () {
+            if (confirm("Do you want to delete this row?")) {
+                var row = $(this).closest("tr");
+                var employeeId = row.find("span").html();
+                $.ajax({
+                    type: "POST",
+                    url: "/EmployeeListEdit/DeleteEmployee",
+                    data: '{employeeId: ' + employeeId + '}',
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (response) {
+                        if ($("#tblEmployees tr").length > 2) {
+                            row.remove();
+                        } else {
+                            row.find(".Edit").hide();
+                            row.find(".Delete").hide();
+                            row.find("span").html('&nbsp;');
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

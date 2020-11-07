@@ -1,0 +1,107 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+<input type="hidden" name="pageAtual" id="pageAtual" value="1" />
+<ul class="nav nav-tabs">
+    <li>
+        <a class="nav-link active" href="#firstTab" role="tab" data-toggle="tab">Listagem</a>
+    </li>
+    <li>
+        <a class="nav-link" href="#secondTab" role="tab" data-toggle="tab">Adicionar Novo</a>
+    </li>
+</ul>
+<div class="tab-content">    
+    <div id="firstTab" class="tab-pane fade in active show">
+        @await Component.InvokeAsync("EmployeeList")
+    </div>
+    <div id="secondTab" class="tab-pane fade in">
+        @await Component.InvokeAsync("EmployeeAddOrEdit")
+    </div>
+</div>
+
+<link href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css" rel="stylesheet" />
+@section scripts{
+    
+    <script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript">
+        function createManageBtn() {
+            return '<button id="manageBtn" type="button" onclick="myFunc()" class="btn btn-success btn-xs">Manage</button>';
+        }
+        function myFunc() {
+            console.log("Button was clicked!!!");
+        }
+    </script>
+    <script>
+        function activatejQueryTable(jCurrentPage) {
+            //var table = $('#employeeTable').DataTable();
+            var page = 0;
+            var table = $('#employeeTable').DataTable({
+                "bStateSave": true,
+                "bDestroy": true,
+                //"initComplete": function (oSettings) {
+                //    var oTable = this;
+                //    var totalRows = oTable.fnGetData().length;
+                //    oTable.fnPageChange(jCurrentPage - 1);
+                //    page = Math.ceil(oSettings._iDisplayStart / oSettings._iDisplayLength);
+
+                //    //oTable.page(jCurrentPage - 1).draw('page');  
+
+                //},
+                "proccessing": true,
+                "serverSide": true,
+                "ajax": {
+                    url: "@Url.Action("CustomServerSideSearchAction", "Employee")",
+                    type: 'POST'
+                },
+                
+                "language": {
+                    "search": "",
+                    "searchPlaceholder": "Search..."
+                },
+                //"columnDefs": [{"render": createManageBtn, "data": null, "targets": [6]}],
+                "columnDefs": [
+                    {
+                        "targets": [ 0 ],
+                        "visible": false
+                    },
+                    {
+                        "targets": [ 6 ],
+                        "data":"employeeID", "render": function(data,type,full,meta)
+                        {
+                            return '<a href="#" class="btn btn-primary btn-sm" onclick="Edit(\'/Employee/AddOrEdit/?id=' + data + '\',\'employee\')">Editar</a> <a href="#" class="btn btn-danger btn-sm" onclick="Delete(\'/Employee/Delete/?id=' + data + '\',\'employee\')">Deletar</a>';
+                        }
+                    },
+                    {
+                        "targets": [ 1 ],
+                        "render": function(data, type, row) {
+                            return '<img src="'+data.replace("~", "")+'" width="40"/>';
+                        }
+                    }
+                ],
+                "columns": [
+                    { "mData": "employeeID" },
+                    { "mData": "imagePath" },
+                    { "mData": "name" },
+                    { "mData": "position" },
+                    { "mData": "office" },
+                    { "mData": "salary" },
+                ]
+            });
+
+            $('#employeeTable').on('page.dt', function () {
+                var info = $('#employeeTable').DataTable().page.info();
+                var pageAtual = info.page + 1;
+                console.log(pageAtual)
+                $("#pageAtual").val(pageAtual)
+                //$('#pageInfo').html( 'Showing page: '+info.page+' of '+info.pages );
+            });
+        }
+
+        $(function () {
+            activatejQueryTable($("#pageAtual").val());
+        });
+
+    </script>
+}
+
